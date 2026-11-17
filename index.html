@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1769aa">
+<meta name="description" content="Control sencillo de ingresos, gastos y presupuestos personales.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>Mi Dinero</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#172435;background:#f4f7fb;font-synthesis:none}
+*{box-sizing:border-box}body{margin:0}header{background:#1769aa;color:white;padding:22px max(18px,calc((100% - 1050px)/2));display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font-size:24px;margin:0}header p{margin:4px 0 0;color:#dcecff;font-size:13px}
+main{max-width:1050px;margin:22px auto;padding:0 16px 40px}.btn{border:0;border-radius:10px;padding:11px 15px;font-weight:650;cursor:pointer}.primary{background:#1769aa;color:white}.light{background:#eaf2fa;color:#174f7d}.danger{background:#fff0f0;color:#b42323}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}.card{background:white;border:1px solid #e2e9f1;border-radius:15px;padding:17px;min-width:0;box-shadow:0 2px 8px #142b4508}.stat-label{font-size:13px;color:#687789}.stat-value{font-size:clamp(21px,3vw,29px);font-weight:750;margin-top:8px;overflow-wrap:anywhere}.green{color:#13875b}.red{color:#c34b4b}.layout{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;margin-bottom:15px}.section-title{font-weight:750;margin:0 0 5px}.sub{font-size:12px;color:#718094;margin-bottom:15px}
+.formgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.field label{font-size:12px;color:#637386;font-weight:650;display:block;margin-bottom:5px}.field input,.field select{width:100%;padding:10px;border:1px solid #d7e0ea;border-radius:9px;background:white;font:inherit;min-width:0}
+.full{grid-column:1/-1}.tabs{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0}.tab{background:white;border:1px solid #dce4ed;color:#526477;border-radius:9px;padding:8px 12px;cursor:pointer}.tab.active{background:#1769aa;color:white;border-color:#1769aa}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #edf0f4}.row:last-child{border:0}.desc{font-weight:650;font-size:14px}.meta{font-size:12px;color:#758397;margin-top:4px}.amount{font-weight:750;white-space:nowrap}.del{border:0;background:transparent;color:#a0aaba;cursor:pointer;font-size:18px;padding:5px}
+.pbar{height:9px;border-radius:99px;background:#edf1f5;overflow:hidden;margin:7px 0}.pbar span{display:block;height:100%;background:#3888ca;border-radius:99px}.budgetline{padding:11px 0;border-bottom:1px solid #edf0f4}.budgetline:last-child{border:0}
+#donut{width:150px;height:150px;border-radius:50%;margin:8px auto 16px;display:grid;place-items:center;position:relative}#donut:after{content:"";position:absolute;width:98px;height:98px;background:white;border-radius:50%}#donut span{z-index:1;text-align:center;font-size:12px;color:#657487}#donut b{display:block;color:#172435;font-size:15px}
+.legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;font-size:12px;color:#657487}.legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px}
+.empty{text-align:center;color:#8793a2;padding:25px 8px;font-size:14px}
+dialog{border:0;border-radius:16px;padding:22px;width:min(440px,calc(100% - 28px));box-shadow:0 20px 70px #0003}dialog::backdrop{background:#10243d88}.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+footer{text-align:center;color:#8491a1;font-size:11px;margin:18px 0}
+@media(max-width:700px){main{margin:14px auto}.stats{gap:8px}.stats .card{padding:12px}.stat-label{font-size:11px}.layout{grid-template-columns:1fr}.formgrid{grid-template-columns:1fr}.full{grid-column:auto}header{padding:18px}.row{gap:8px}}
+</style>
+</head>
+<body>
+<header><div><h1>💰 Mi Dinero</h1><p>Tu economía, bajo control.</p></div><button class="btn" style="background:white;color:#1769aa" id="newMove">＋ Nuevo movimiento</button></header>
+<main>
+<section class="stats">
+ <div class="card"><div class="stat-label">Balance actual</div><div class="stat-value" id="balance">0,00 €</div><div class="meta">Ingresos menos gastos</div></div>
+ <div class="card"><div class="stat-label">↗ Ingresos totales</div><div class="stat-value green" id="income">0,00 €</div></div>
+ <div class="card"><div class="stat-label">↘ Gastos totales</div><div class="stat-value red" id="expense">0,00 €</div></div>
+</section>
+<section class="layout">
+ <div class="card"><h2 class="section-title">Gastos por categorías</h2><div class="sub">Distribución de todos tus gastos</div><div id="donut"><span>Sin datos</span></div><div class="legend" id="legend"></div></div>
+ <div class="card"><h2 class="section-title">Presupuestos mensuales</h2><div class="sub">Límites de gasto por categoría (mes actual)</div><div id="budgets"></div><button class="btn light" id="editBudgets" style="margin-top:12px">Configurar presupuestos</button></div>
+</section>
+<section class="card">
+ <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2 class="section-title">Historial de movimientos</h2><div class="sub" style="margin:4px 0 0">Consulta y administra tus operaciones</div></div><button class="btn light" id="export">↓ Exportar CSV</button></div>
+ <div class="tabs"><button class="tab active" data-filter="all">Todos</button><button class="tab" data-filter="income">Ingresos</button><button class="tab" data-filter="expense">Gastos</button><select id="catFilter" class="tab"><option value="">Todas las categorías</option></select><input id="search" class="tab" placeholder="Buscar..." style="min-width:120px;flex:1"></div>
+ <div id="history"><div class="empty">Todavía no hay movimientos. Añade tu primer ingreso o gasto.</div></div>
+</section>
+<footer>Los datos se guardan en este navegador y dispositivo. Exporta una copia CSV periódicamente.</footer>
+</main>
+<dialog id="moveDialog"><form id="moveForm"><h2 style="margin:0 0 16px">Nuevo movimiento</h2><div class="formgrid">
+<div class="field full"><label>Tipo de movimiento</label><select id="type"><option value="expense">Gasto</option><option value="income">Ingreso</option></select></div>
+<div class="field"><label>Fecha</label><input type="date" id="date" required></div>
+<div class="field"><label>Categoría</label><select id="category"></select></div>
+<div class="field full"><label>Descripción</label><input id="description" maxlength="100" required placeholder="Ej. Compra supermercado"></div>
+<div class="field full"><label>Cuantía (€)</label><input id="amount" type="number" min=".01" step=".01" required placeholder="0,00"></div>
+</div><div class="actions"><button type="button" class="btn light" id="cancelMove">Cancelar</button><button class="btn primary">Guardar</button></div></form></dialog>
+<dialog id="budgetDialog"><form id="budgetForm"><h2 style="margin:0 0 8px">Presupuestos mensuales</h2><p class="sub">Indica el máximo que quieres gastar al mes. Deja en blanco las categorías sin límite.</p><div id="budgetInputs" class="formgrid"></div><div class="actions"><button type="button" class="btn light" id="cancelBudget">Cancelar</button><button class="btn primary">Guardar presupuestos</button></div></form></dialog>
+<script>
+const $=id=>document.getElementById(id), money=n=>new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(n);
+const expenseCats=['Alimentación','Vivienda','Transporte','Ocio','Salud','Compras','Educación','Facturas','Otros'],incomeCats=['Salario','Pagas extras','Inversiones','Ventas','Regalos','Otros'];
+const palette=['#4388d2','#19a47a','#e4a23b','#9269cf','#dc6b77','#43a6ad','#8a99a9','#b58a55'];
+let moves=[],budgets={},filter='all';
+try{moves=JSON.parse(localStorage.getItem('md_moves')||'[]');budgets=JSON.parse(localStorage.getItem('md_budgets')||'{}')}catch(e){}
+const persist=()=>{localStorage.setItem('md_moves',JSON.stringify(moves));localStorage.setItem('md_budgets',JSON.stringify(budgets))};
+const today=()=>{let d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function fillCats(){let cats=$('type').value==='expense'?expenseCats:incomeCats;$('category').innerHTML=cats.map(c=>`<option>${c}</option>`).join('')}
+$('type').onchange=fillCats;
+$('newMove').onclick=()=>{$('moveForm').reset();$('date').value=today();fillCats();$('moveDialog').showModal()};
+$('cancelMove').onclick=()=>$('moveDialog').close();
+$('moveForm').onsubmit=e=>{e.preventDefault();let a=Number($('amount').value);if(a<=0)return;moves.push({id:Date.now()+Math.random(),date:$('date').value,type:$('type').value,category:$('category').value,description:$('description').value.trim(),amount:Math.round(a*100)/100});persist();$('moveDialog').close();render()};
+function render(){let inc=moves.filter(x=>x.type==='income').reduce((s,x)=>s+x.amount,0),out=moves.filter(x=>x.type==='expense').reduce((s,x)=>s+x.amount,0);$('balance').textContent=money(inc-out);$('balance').className='stat-value '+(inc-out<0?'red':'');$('income').textContent=money(inc);$('expense').textContent=money(out);renderChart();renderBudgets();renderHistory()}
+function renderChart(){let totals={};moves.filter(x=>x.type==='expense').forEach(x=>totals[x.category]=(totals[x.category]||0)+x.amount);let arr=Object.entries(totals).sort((a,b)=>b[1]-a[1]),sum=arr.reduce((s,x)=>s+x[1],0);if(!sum){$('donut').style.background='#edf1f5';$('donut').innerHTML='<span>Sin gastos<br>registrados</span>';$('legend').innerHTML='';return}let p=0,stops=[];arr.forEach((x,i)=>{let end=p+x[1]/sum*100;stops.push(`${palette[i%palette.length]} ${p}% ${end}%`);p=end});$('donut').style.background=`conic-gradient(${stops.join(',')})`;$('donut').innerHTML=`<span>Total gastos<b>${money(sum)}</b></span>`;$('legend').innerHTML=arr.map((x,i)=>`<div><i style="background:${palette[i%palette.length]}"></i>${esc(x[0])} · ${Math.round(x[1]/sum*100)}%</div>`).join('')}
+function renderBudgets(){let month=today().slice(0,7),spend={};moves.filter(x=>x.type==='expense'&&x.date.startsWith(month)).forEach(x=>spend[x.category]=(spend[x.category]||0)+x.amount);let keys=Object.keys(budgets).filter(k=>Number(budgets[k])>0);if(!keys.length){$('budgets').innerHTML='<div class="empty">Aún no has configurado límites mensuales.</div>';return}$('budgets').innerHTML=keys.map(k=>{let cap=Number(budgets[k]),used=spend[k]||0,pct=used/cap*100;return `<div class="budgetline"><div style="display:flex;justify-content:space-between;gap:8px;font-size:13px"><b>${esc(k)}</b><span>${money(used)} / ${money(cap)}</span></div><div class="pbar"><span style="width:${Math.min(100,pct)}%;background:${pct>=100?'#d44d4d':pct>=80?'#df9b32':'#3888ca'}"></span></div><div class="meta">${pct>=100?'Límite superado':pct>=80?'Cerca del límite':`Te quedan ${money(cap-used)}`}</div></div>`}).join('')}
+function renderHistory(){let cat=$('catFilter').value,term=$('search').value.toLowerCase();let all=[...new Set(moves.map(x=>x.category))].sort();$('catFilter').innerHTML='<option value="">Todas las categorías</option>'+all.map(x=>`<option>${esc(x)}</option>`).join('');$('catFilter').value=cat;let arr=moves.filter(x=>(filter==='all'||x.type===filter)&&(!cat||x.category===cat)&&(!term||(x.description+' '+x.category).toLowerCase().includes(term))).sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);if(!arr.length){$('history').innerHTML='<div class="empty">No hay movimientos que mostrar.</div>';return}$('history').innerHTML=arr.map(x=>`<div class="row"><div style="min-width:0"><div class="desc">${esc(x.description)}</div><div class="meta">${esc(x.category)} · ${x.date.split('-').reverse().join('/')}</div></div><div class="amount ${x.type==='income'?'green':'red'}">${x.type==='income'?'+':'−'}${money(x.amount)}</div><button class="del" data-del="${x.id}" aria-label="Eliminar">🗑</button></div>`).join('')}
+$('history').onclick=e=>{let b=e.target.closest('[data-del]');if(!b)return;if(confirm('¿Eliminar este movimiento?')){moves=moves.filter(x=>String(x.id)!==b.dataset.del);persist();render()}};
+document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===b));renderHistory()});
+$('catFilter').onchange=renderHistory;$('search').oninput=renderHistory;
+$('editBudgets').onclick=()=>{$('budgetInputs').innerHTML=expenseCats.map(c=>`<div class="field"><label>${c} (€ al mes)</label><input type="number" min="0" step=".01" name="${c}" value="${budgets[c]||''}" placeholder="Sin límite"></div>`).join('');$('budgetDialog').showModal()};
+$('cancelBudget').onclick=()=>$('budgetDialog').close();
+$('budgetForm').onsubmit=e=>{e.preventDefault();budgets={};new FormData(e.target).forEach((v,k)=>{if(Number(v)>0)budgets[k]=Number(v)});persist();$('budgetDialog').close();render()};
+$('export').onclick=()=>{let rows=[['Fecha','Categoría','Descripción','Tipo','Cuantía (€)'],...moves.map(x=>[x.date,x.category,x.description,x.type,x.amount.toFixed(2).replace('.',',')])];let csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');let a=document.createElement('a'),u=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.href=u;a.download='mi-dinero.csv';a.click();URL.revokeObjectURL(u)};
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+render();
+</script>
+</body></html>
